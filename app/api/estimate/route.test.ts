@@ -67,7 +67,7 @@ describe("POST /api/estimate", () => {
         429,
         { type: "error", error: { type: "rate_limit_error", message: "slow down" } },
         "slow down",
-        undefined,
+        new Headers(),
       ),
     );
 
