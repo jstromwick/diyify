@@ -6,6 +6,8 @@ const MODEL = "claude-opus-5";
 
 export interface EstimateTier {
   tier: "low" | "medium" | "high";
+  name: string;
+  description: string;
   cost_range: string;
   materials: string[];
   time_estimate: string;
@@ -19,9 +21,11 @@ export interface ModeAEstimate {
 }
 
 const SYSTEM_PROMPT = `You help homeowners plan DIY projects. Given a project description, break it
-down into three cost tiers: low, medium, and high. For each tier, give a realistic cost range,
-a materials list, a time estimate, and 1-3 YouTube search queries someone could use to find
-tutorials for that approach. Do not invent YouTube URLs or video titles — only search queries.
+down into three cost tiers: low, medium, and high. For each tier, give a short, catchy name (2-4
+words, e.g. "Weekend Build", "Showroom Finish") and a one-sentence description of the approach, a
+realistic cost range, a materials list, a time estimate, and 1-3 YouTube search queries someone
+could use to find tutorials for that approach. Do not invent YouTube URLs or video titles — only
+search queries.
 
 Standing safety rule: for safety-relevant project categories (electrical, structural, gas lines,
 and similar), include typical permit and licensed-professional requirements in safety_notes for
@@ -47,6 +51,14 @@ const ESTIMATE_TOOL: Anthropic.Tool = {
           type: "object",
           properties: {
             tier: { type: "string", enum: ["low", "medium", "high"] },
+            name: {
+              type: "string",
+              description: "Short, catchy name for this tier's approach, e.g. \"Weekend Build\".",
+            },
+            description: {
+              type: "string",
+              description: "One-sentence summary of what this tier's approach involves.",
+            },
             cost_range: { type: "string", description: "e.g. \"$150-300\"" },
             materials: { type: "array", items: { type: "string" } },
             time_estimate: { type: "string", description: "e.g. \"1 weekend\"" },
@@ -63,6 +75,8 @@ const ESTIMATE_TOOL: Anthropic.Tool = {
           },
           required: [
             "tier",
+            "name",
+            "description",
             "cost_range",
             "materials",
             "time_estimate",

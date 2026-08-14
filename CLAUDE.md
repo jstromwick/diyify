@@ -36,10 +36,13 @@ Return three cost tiers: low, medium, high.
   "tiers": [
     {
       "tier": "low",
+      "name": "Weekend Build",
+      "description": "Pressure-treated lumber with basic balusters — solid and code-safe, minus the finishing touches.",
       "cost_range": "$150-300",
       "materials": ["pressure-treated 2x4s", "deck screws", "basic balusters"],
       "time_estimate": "1 weekend",
-      "video_search_queries": ["budget deck railing DIY pressure treated"]
+      "video_search_queries": ["budget deck railing DIY pressure treated"],
+      "safety_notes": null
     },
     { "tier": "medium", "...": "..." },
     { "tier": "high", "...": "..." }

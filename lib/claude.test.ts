@@ -20,6 +20,8 @@ describe("generateModeAEstimate", () => {
       tiers: [
         {
           tier: "low",
+          name: "Weekend Build",
+          description: "Pressure-treated lumber with basic balusters.",
           cost_range: "$150-300",
           materials: ["pressure-treated 2x4s"],
           time_estimate: "1 weekend",
