@@ -284,14 +284,6 @@ textarea.input {
 
 /* — illustration keyframes (kept global and unscoped so inline
    style="animation: name ..." on SVG elements can reference them by name) — */
-@keyframes shaving-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(-360deg);
-  }
-}
 @keyframes bob {
   0%,
   100% {
