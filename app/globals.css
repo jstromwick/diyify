@@ -318,3 +318,12 @@ textarea.input {
     transform: translateY(0);
   }
 }
+
+/* LoadingIllustration sets these via inline style="animation: …", which
+   outranks normal stylesheet rules — !important is required to win. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
