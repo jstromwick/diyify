@@ -41,17 +41,27 @@ function TiersResult({ estimate }: { estimate: EstimateWithTiers }) {
 
             <div className={styles.sectionLabel}>Materials</div>
             <ul className={styles.materials}>
-              {tier.materials.map((material) => (
-                <li key={material}>{material}</li>
+              {tier.materialsWithBudget.map((material, index) => (
+                <li key={index} className={styles.materialItem}>
+                  <span>{material.item}</span>
+                  <span className={styles.materialCost}>{material.estimatedCost}</span>
+                </li>
               ))}
             </ul>
+
+            <div className={styles.sectionLabel}>Plan</div>
+            <ol className={styles.plan}>
+              {tier.plan.map((step, index) => (
+                <li key={index}>{step}</li>
+              ))}
+            </ol>
 
             {tier.safety_notes && <p className={styles.safetyNote}>{tier.safety_notes}</p>}
 
             <div className={styles.sectionLabel}>Watch &amp; learn</div>
             <div className={styles.queries}>
-              {tier.video_search_queries.map((query) => (
-                <span key={query} className={`tag tag-outline ${styles.queryTag}`}>
+              {tier.video_search_queries.map((query, index) => (
+                <span key={index} className={`tag tag-outline ${styles.queryTag}`}>
                   <SearchIcon />
                   {query}
                 </span>
@@ -81,10 +91,20 @@ function RealisticResult({ estimate }: { estimate: RealisticEstimate }) {
 
         <div className={styles.sectionLabel}>Materials</div>
         <ul className={styles.materials}>
-          {estimate.withinBudget.materials.map((material) => (
-            <li key={material}>{material}</li>
+          {estimate.withinBudget.materialsWithBudget.map((material, index) => (
+            <li key={index} className={styles.materialItem}>
+              <span>{material.item}</span>
+              <span className={styles.materialCost}>{material.estimatedCost}</span>
+            </li>
           ))}
         </ul>
+
+        <div className={styles.sectionLabel}>Plan</div>
+        <ol className={styles.plan}>
+          {estimate.withinBudget.plan.map((step, index) => (
+            <li key={index}>{step}</li>
+          ))}
+        </ol>
 
         {estimate.withinBudget.safety_notes && (
           <p className={styles.safetyNote}>{estimate.withinBudget.safety_notes}</p>
@@ -92,8 +112,8 @@ function RealisticResult({ estimate }: { estimate: RealisticEstimate }) {
 
         <div className={styles.sectionLabel}>Watch &amp; learn</div>
         <div className={styles.queries}>
-          {estimate.withinBudget.video_search_queries.map((query) => (
-            <span key={query} className={`tag tag-outline ${styles.queryTag}`}>
+          {estimate.withinBudget.video_search_queries.map((query, index) => (
+            <span key={index} className={`tag tag-outline ${styles.queryTag}`}>
               <SearchIcon />
               {query}
             </span>
@@ -133,10 +153,20 @@ function UnrealisticResult({ estimate }: { estimate: UnrealisticEstimate }) {
 
         <div className={styles.sectionLabel}>Materials</div>
         <ul className={styles.materials}>
-          {estimate.whatThatGetsYou.materials.map((material) => (
-            <li key={material}>{material}</li>
+          {estimate.whatThatGetsYou.materialsWithBudget.map((material, index) => (
+            <li key={index} className={styles.materialItem}>
+              <span>{material.item}</span>
+              <span className={styles.materialCost}>{material.estimatedCost}</span>
+            </li>
           ))}
         </ul>
+
+        <div className={styles.sectionLabel}>Plan</div>
+        <ol className={styles.plan}>
+          {estimate.whatThatGetsYou.plan.map((step, index) => (
+            <li key={index}>{step}</li>
+          ))}
+        </ol>
 
         {estimate.whatThatGetsYou.safety_notes && (
           <p className={styles.safetyNote}>{estimate.whatThatGetsYou.safety_notes}</p>
@@ -144,8 +174,8 @@ function UnrealisticResult({ estimate }: { estimate: UnrealisticEstimate }) {
 
         <div className={styles.sectionLabel}>Watch &amp; learn</div>
         <div className={styles.queries}>
-          {estimate.whatThatGetsYou.video_search_queries.map((query) => (
-            <span key={query} className={`tag tag-outline ${styles.queryTag}`}>
+          {estimate.whatThatGetsYou.video_search_queries.map((query, index) => (
+            <span key={index} className={`tag tag-outline ${styles.queryTag}`}>
               <SearchIcon />
               {query}
             </span>
@@ -243,7 +273,7 @@ export default function Home() {
               />
             </div>
             <div className={`field ${styles.field}`}>
-              <label htmlFor="budget">Budget (optional)</label>
+              <label htmlFor="budget">Budget in $ (optional)</label>
               <input
                 id="budget"
                 type="number"
