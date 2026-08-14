@@ -273,7 +273,7 @@ export default function Home() {
               />
             </div>
             <div className={`field ${styles.field}`}>
-              <label htmlFor="budget">Budget (optional)</label>
+              <label htmlFor="budget">Budget in $ (optional)</label>
               <input
                 id="budget"
                 type="number"
