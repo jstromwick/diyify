@@ -4,13 +4,20 @@ const client = new Anthropic();
 
 const MODEL = "claude-opus-5";
 
+export interface MaterialBudgetItem {
+  item: string;
+  estimatedCost: string;
+}
+
 export interface EstimateTier {
   tier: "low" | "medium" | "high";
   name: string;
   description: string;
   cost_range: string;
   materials: string[];
+  materialsWithBudget: MaterialBudgetItem[];
   time_estimate: string;
+  plan: string[];
   video_search_queries: string[];
   safety_notes: string | null;
 }
@@ -27,7 +34,9 @@ export interface RealisticEstimate {
   withinBudget: {
     cost_range: string;
     materials: string[];
+    materialsWithBudget: MaterialBudgetItem[];
     trade_offs: string;
+    plan: string[];
     video_search_queries: string[];
     safety_notes: string | null;
   };
@@ -49,6 +58,8 @@ export interface UnrealisticEstimate {
   minRealisticBudget: number;
   whatThatGetsYou: {
     materials: string[];
+    materialsWithBudget: MaterialBudgetItem[];
+    plan: string[];
     video_search_queries: string[];
     safety_notes: string | null;
   };
@@ -59,9 +70,17 @@ export type BudgetEstimate = RealisticEstimate | UnrealisticEstimate;
 const SYSTEM_PROMPT = `You help homeowners plan DIY projects. Given a project description, break it
 down into three cost tiers: low, medium, and high. For each tier, give a short, catchy name (2-4
 words, e.g. "Weekend Build", "Showroom Finish") and a one-sentence description of the approach, a
-realistic cost range, a materials list, a time estimate, and 1-3 YouTube search queries someone
+realistic cost range, a materials list with individual cost estimates (e.g. "100sqft of tile ~$200"),
+a time estimate, a step-by-step plan for completing the work, and 1-3 YouTube search queries someone
 could use to find tutorials for that approach. Do not invent YouTube URLs or video titles — only
 search queries.
+
+IMPORTANT: Assume all labor that is safe for a DIYer to do is done for free by the user. Only include
+material costs and costs for labor that requires a licensed professional or specialized equipment.
+The materialsWithBudget items should explain and roughly align with the total cost_range.
+
+For the plan, provide an ordered list of steps (e.g. "1. Demo existing tile", "2. Prepare substrate",
+"3. Install new tile", etc.) that outlines the logical order for a DIYer to complete the work.
 
 Standing safety rule: for safety-relevant project categories (electrical, structural, gas lines,
 and similar), include typical permit and licensed-professional requirements in safety_notes for
@@ -97,7 +116,25 @@ const ESTIMATE_TOOL: Anthropic.Tool = {
             },
             cost_range: { type: "string", description: "e.g. \"$150-300\"" },
             materials: { type: "array", items: { type: "string" } },
+            materialsWithBudget: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  item: { type: "string", description: "Material or labor description, e.g. \"100sqft of tile\" or \"Electrician labor\"" },
+                  estimatedCost: { type: "string", description: "e.g. \"~$200\" or \"$300-400\"" },
+                },
+                required: ["item", "estimatedCost"],
+                additionalProperties: false,
+              },
+              description: "Materials and costs itemized, roughly explaining the total cost_range. Includes only materials and unsafe labor.",
+            },
             time_estimate: { type: "string", description: "e.g. \"1 weekend\"" },
+            plan: {
+              type: "array",
+              items: { type: "string" },
+              description: "Ordered steps for completing the work, e.g. [\"1. Demo existing tile\", \"2. Prepare substrate\", \"3. Install new tile\"]",
+            },
             video_search_queries: {
               type: "array",
               items: { type: "string" },
@@ -115,7 +152,9 @@ const ESTIMATE_TOOL: Anthropic.Tool = {
             "description",
             "cost_range",
             "materials",
+            "materialsWithBudget",
             "time_estimate",
+            "plan",
             "video_search_queries",
             "safety_notes",
           ],
@@ -131,20 +170,24 @@ const ESTIMATE_TOOL: Anthropic.Tool = {
 const BUDGET_SYSTEM_PROMPT = `You help homeowners plan DIY projects against a stated budget. Given a project
 description and a budget, first decide whether the budget is realistic for that project.
 
-If it is realistic: propose the best plan achievable at that budget (cost range, materials, the
-trade-offs made to hit this number, and 1-3 YouTube search queries), plus a stretch option (what
-you'd gain by going ~20% over budget) and a savings option (what you'd cut to go ~20% under
-budget). Do not invent YouTube URLs or video titles — only search queries.
+If it is realistic: propose the best plan achievable at that budget (cost range, materials with itemized
+budgets, the trade-offs made to hit this number, a step-by-step work plan, and 1-3 YouTube search queries),
+plus a stretch option (what you'd gain by going ~20% over budget) and a savings option (what you'd cut to go
+~20% under budget). Do not invent YouTube URLs or video titles — only search queries.
 
-If it is not realistic: say so plainly, don't force a fit or quietly cut safety corners. Explain
-why in one or two sentences, state the real minimum realistic budget, and describe what that
-minimum gets you (materials and 1-3 YouTube search queries).
+If it is not realistic: say so plainly, don't force a fit or quietly cut safety corners. Explain why in one
+or two sentences, state the real minimum realistic budget, and describe what that minimum gets you (materials
+with itemized budgets, a step-by-step work plan, and 1-3 YouTube search queries).
 
-Standing safety rule: for safety-relevant project categories (electrical, structural, gas lines,
-and similar), flag typical permit and licensed-professional requirements — even when the budget is
-realistic, not only when rejecting it. Put this in withinBudget.safety_notes when realistic, or
-whatThatGetsYou.safety_notes when not. For projects with no such concerns, set safety_notes to
-null.`;
+IMPORTANT: Assume all labor that is safe for a DIYer to do is done for free by the user. Only include material
+costs and costs for labor that requires a licensed professional or specialized equipment. The materialsWithBudget
+items should explain and roughly align with the total cost_range. The plan should be an ordered list of steps
+(e.g. "1. Demo", "2. Framing", "3. Electrical") outlining the logical order for a DIYer to complete the work.
+
+Standing safety rule: for safety-relevant project categories (electrical, structural, gas lines, and similar),
+flag typical permit and licensed-professional requirements — even when the budget is realistic, not only when
+rejecting it. Put this in withinBudget.safety_notes when realistic, or whatThatGetsYou.safety_notes when not.
+For projects with no such concerns, set safety_notes to null.`;
 
 const BUDGET_ESTIMATE_TOOL: Anthropic.Tool = {
   name: "generate_budget_estimate",
@@ -174,9 +217,27 @@ const BUDGET_ESTIMATE_TOOL: Anthropic.Tool = {
         properties: {
           cost_range: { type: "string", description: "e.g. \"$350-400\"" },
           materials: { type: "array", items: { type: "string" } },
+          materialsWithBudget: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                item: { type: "string", description: "Material or labor description, e.g. \"100sqft of tile\" or \"Electrician labor\"" },
+                estimatedCost: { type: "string", description: "e.g. \"~$200\" or \"$300-400\"" },
+              },
+              required: ["item", "estimatedCost"],
+              additionalProperties: false,
+            },
+            description: "Materials and costs itemized, roughly explaining the total cost_range. Includes only materials and unsafe labor.",
+          },
           trade_offs: {
             type: "string",
             description: "What's sacrificed to hit this budget vs a higher tier.",
+          },
+          plan: {
+            type: "array",
+            items: { type: "string" },
+            description: "Ordered steps for completing the work, e.g. [\"1. Demo\", \"2. Framing\", \"3. Electrical\"]",
           },
           video_search_queries: {
             type: "array",
@@ -189,7 +250,7 @@ const BUDGET_ESTIMATE_TOOL: Anthropic.Tool = {
               "Permit/licensed-professional guidance for safety-relevant categories; null otherwise.",
           },
         },
-        required: ["cost_range", "materials", "trade_offs", "video_search_queries", "safety_notes"],
+        required: ["cost_range", "materials", "materialsWithBudget", "trade_offs", "plan", "video_search_queries", "safety_notes"],
         additionalProperties: false,
       },
       stretchOption: {
@@ -226,6 +287,24 @@ const BUDGET_ESTIMATE_TOOL: Anthropic.Tool = {
         description: "Populated when realistic is false; null when realistic is true.",
         properties: {
           materials: { type: "array", items: { type: "string" } },
+          materialsWithBudget: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                item: { type: "string", description: "Material or labor description, e.g. \"100sqft of tile\" or \"Electrician labor\"" },
+                estimatedCost: { type: "string", description: "e.g. \"~$200\" or \"$300-400\"" },
+              },
+              required: ["item", "estimatedCost"],
+              additionalProperties: false,
+            },
+            description: "Materials and costs itemized, roughly explaining the total cost_range. Includes only materials and unsafe labor.",
+          },
+          plan: {
+            type: "array",
+            items: { type: "string" },
+            description: "Ordered steps for completing the work, e.g. [\"1. Demo\", \"2. Framing\", \"3. Electrical\"]",
+          },
           video_search_queries: {
             type: "array",
             items: { type: "string" },
@@ -237,7 +316,7 @@ const BUDGET_ESTIMATE_TOOL: Anthropic.Tool = {
               "Permit/licensed-professional guidance for safety-relevant categories; null otherwise.",
           },
         },
-        required: ["materials", "video_search_queries", "safety_notes"],
+        required: ["materials", "materialsWithBudget", "plan", "video_search_queries", "safety_notes"],
         additionalProperties: false,
       },
     },
@@ -274,12 +353,16 @@ export async function generateBudgetEstimate(
 ): Promise<BudgetEstimate> {
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: BUDGET_SYSTEM_PROMPT,
     tools: [BUDGET_ESTIMATE_TOOL],
     tool_choice: { type: "tool", name: "generate_budget_estimate" },
     messages: [{ role: "user", content: `${description}\n\nBudget: $${budget}` }],
   });
+
+  if (response.stop_reason === "max_tokens") {
+    throw new Error("Claude's response was truncated (hit max_tokens) before completing the estimate");
+  }
 
   const toolUse = response.content.find(
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
@@ -322,12 +405,16 @@ export async function generateEstimateWithTiers(
 ): Promise<EstimateWithTiers> {
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT,
     tools: [ESTIMATE_TOOL],
     tool_choice: { type: "tool", name: "generate_estimate" },
     messages: [{ role: "user", content: description }],
   });
+
+  if (response.stop_reason === "max_tokens") {
+    throw new Error("Claude's response was truncated (hit max_tokens) before completing the estimate");
+  }
 
   const toolUse = response.content.find(
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",

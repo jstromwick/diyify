@@ -41,10 +41,20 @@ function TiersResult({ estimate }: { estimate: EstimateWithTiers }) {
 
             <div className={styles.sectionLabel}>Materials</div>
             <ul className={styles.materials}>
-              {tier.materials.map((material) => (
-                <li key={material}>{material}</li>
+              {tier.materialsWithBudget.map((material) => (
+                <li key={material.item} className={styles.materialItem}>
+                  <span>{material.item}</span>
+                  <span className={styles.materialCost}>{material.estimatedCost}</span>
+                </li>
               ))}
             </ul>
+
+            <div className={styles.sectionLabel}>Plan</div>
+            <ol className={styles.plan}>
+              {tier.plan.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
 
             {tier.safety_notes && <p className={styles.safetyNote}>{tier.safety_notes}</p>}
 
@@ -81,10 +91,20 @@ function RealisticResult({ estimate }: { estimate: RealisticEstimate }) {
 
         <div className={styles.sectionLabel}>Materials</div>
         <ul className={styles.materials}>
-          {estimate.withinBudget.materials.map((material) => (
-            <li key={material}>{material}</li>
+          {estimate.withinBudget.materialsWithBudget.map((material) => (
+            <li key={material.item} className={styles.materialItem}>
+              <span>{material.item}</span>
+              <span className={styles.materialCost}>{material.estimatedCost}</span>
+            </li>
           ))}
         </ul>
+
+        <div className={styles.sectionLabel}>Plan</div>
+        <ol className={styles.plan}>
+          {estimate.withinBudget.plan.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
 
         {estimate.withinBudget.safety_notes && (
           <p className={styles.safetyNote}>{estimate.withinBudget.safety_notes}</p>
@@ -133,10 +153,20 @@ function UnrealisticResult({ estimate }: { estimate: UnrealisticEstimate }) {
 
         <div className={styles.sectionLabel}>Materials</div>
         <ul className={styles.materials}>
-          {estimate.whatThatGetsYou.materials.map((material) => (
-            <li key={material}>{material}</li>
+          {estimate.whatThatGetsYou.materialsWithBudget.map((material) => (
+            <li key={material.item} className={styles.materialItem}>
+              <span>{material.item}</span>
+              <span className={styles.materialCost}>{material.estimatedCost}</span>
+            </li>
           ))}
         </ul>
+
+        <div className={styles.sectionLabel}>Plan</div>
+        <ol className={styles.plan}>
+          {estimate.whatThatGetsYou.plan.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
 
         {estimate.whatThatGetsYou.safety_notes && (
           <p className={styles.safetyNote}>{estimate.whatThatGetsYou.safety_notes}</p>

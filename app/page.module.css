@@ -133,6 +133,27 @@
   gap: 3px;
 }
 
+.materialItem {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.materialCost {
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.plan {
+  margin: 0 0 var(--space-2);
+  padding-left: 18px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  list-style: none;
+}
+
 .safetyNote {
   font-size: 12px;
   line-height: 1.5;

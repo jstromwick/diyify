@@ -24,7 +24,13 @@ describe("generateModeAEstimate", () => {
           description: "Pressure-treated lumber with basic balusters.",
           cost_range: "$150-300",
           materials: ["pressure-treated 2x4s"],
+          materialsWithBudget: [
+            { item: "Pressure-treated 2x4s (50 linear feet)", estimatedCost: "~$150" },
+            { item: "Deck screws and hardware", estimatedCost: "~$50" },
+            { item: "Basic balusters", estimatedCost: "~$100" },
+          ],
           time_estimate: "1 weekend",
+          plan: ["1. Measure and cut materials", "2. Install posts", "3. Attach rails", "4. Install balusters"],
           video_search_queries: ["budget deck railing DIY"],
           safety_notes: null,
         },
@@ -53,6 +59,24 @@ describe("generateModeAEstimate", () => {
       /tool_use/,
     );
   });
+
+  it("throws when the response was truncated at max_tokens", async () => {
+    create.mockResolvedValue({
+      stop_reason: "max_tokens",
+      content: [
+        {
+          type: "tool_use",
+          id: "toolu_1",
+          name: "generate_estimate",
+          input: { project: "Full remodel of a 100 sq ft bathroom" },
+        },
+      ],
+    });
+
+    await expect(generateEstimateWithTiers("Full bathroom remodel")).rejects.toThrow(
+      /truncated/,
+    );
+  });
 });
 
 describe("generateBudgetEstimate", () => {
@@ -68,7 +92,13 @@ describe("generateBudgetEstimate", () => {
       withinBudget: {
         cost_range: "$350-400",
         materials: ["pressure-treated 2x4s"],
-        trade_offs: "Standard pressure-treated wood instead of composite",
+        materialsWithBudget: [
+          { item: "Pressure-treated 2x4s (50 linear feet)", estimatedCost: "~$150" },
+          { item: "Deck screws and hardware", estimatedCost: "~$50" },
+          { item: "Composite balusters", estimatedCost: "~$200" },
+        ],
+        trade_offs: "Standard pressure-treated wood instead of premium composite",
+        plan: ["1. Measure and cut materials", "2. Install posts", "3. Attach rails", "4. Install balusters"],
         video_search_queries: ["deck railing on a budget"],
         safety_notes: null,
       },
@@ -119,8 +149,15 @@ describe("generateBudgetEstimate", () => {
       minRealisticBudget: 180,
       whatThatGetsYou: {
         materials: ["GFCI outlet", "wire, box, cover plate"],
+        materialsWithBudget: [
+          { item: "GFCI outlet", estimatedCost: "~$20" },
+          { item: "Wire and box", estimatedCost: "~$15" },
+          { item: "Permit fee", estimatedCost: "$50-100" },
+          { item: "Electrician inspection (if required)", estimatedCost: "$80-150" },
+        ],
+        plan: ["1. Turn off power", "2. Remove old outlet", "3. Install new GFCI outlet", "4. Test and verify", "5. Schedule permit inspection"],
         video_search_queries: ["install GFCI outlet bathroom code"],
-        safety_notes: "GFCI-rated components and a permit are typically required for this work.",
+        safety_notes: "GFCI-rated components and a permit are typically required for this work. Check your local building codes.",
       },
     };
     create.mockResolvedValue({
@@ -198,6 +235,24 @@ describe("generateBudgetEstimate", () => {
 
     await expect(generateBudgetEstimate("Rewire a bathroom outlet", 50)).rejects.toThrow(
       /omitted the unrealistic-budget fields/,
+    );
+  });
+
+  it("throws when the response was truncated at max_tokens", async () => {
+    create.mockResolvedValue({
+      stop_reason: "max_tokens",
+      content: [
+        {
+          type: "tool_use",
+          id: "toolu_1",
+          name: "generate_budget_estimate",
+          input: { project: "Full remodel of a 100 sq ft bathroom", budget: 5000 },
+        },
+      ],
+    });
+
+    await expect(generateBudgetEstimate("Full bathroom remodel", 5000)).rejects.toThrow(
+      /truncated/,
     );
   });
 });
