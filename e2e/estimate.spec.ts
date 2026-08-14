@@ -24,6 +24,10 @@ test.describe("POST /api/estimate (live, Mode A)", () => {
     expect(tierNames.sort()).toEqual(["high", "low", "medium"]);
 
     for (const tier of body.tiers) {
+      expect(typeof tier.name).toBe("string");
+      expect(tier.name.length).toBeGreaterThan(0);
+      expect(typeof tier.description).toBe("string");
+      expect(tier.description.length).toBeGreaterThan(0);
       expect(typeof tier.cost_range).toBe("string");
       expect(Array.isArray(tier.materials)).toBe(true);
       expect(tier.materials.length).toBeGreaterThan(0);
