@@ -67,7 +67,7 @@ export interface UnrealisticEstimate {
 
 export type BudgetEstimate = RealisticEstimate | UnrealisticEstimate;
 
-const SYSTEM_PROMPT = `You help homeowners plan DIY projects. Given a project description, break it
+const TIER_ESTIMATE_PROMPT = `You help homeowners plan DIY projects. Given a project description, break it
 down into three cost tiers: low, medium, and high. For each tier, give a short, catchy name (2-4
 words, e.g. "Weekend Build", "Showroom Finish") and a one-sentence description of the approach, a
 realistic cost range, a materials list with individual cost estimates (e.g. "100sqft of tile ~$200"),
@@ -80,7 +80,11 @@ material costs and costs for labor that requires a licensed professional or spec
 The materialsWithBudget items should explain and roughly align with the total cost_range.
 
 For the plan, provide an ordered list of steps (e.g. "1. Demo existing tile", "2. Prepare substrate",
-"3. Install new tile", etc.) that outlines the logical order for a DIYer to complete the work.
+"3. Install new tile", etc.) that outlines the logical order for a DIYer to complete the work. Any
+step that involves work requiring a licensed professional or permit inspection must be labeled as
+performed by that professional (e.g. "4. Licensed electrician runs new circuit"), not framed as a
+DIY task — keep the DIYer's own steps limited to safe preparation, assistance, or follow-up around
+that work.
 
 Standing safety rule: for safety-relevant project categories (electrical, structural, gas lines,
 and similar), include typical permit and licensed-professional requirements in safety_notes for
@@ -167,7 +171,7 @@ const ESTIMATE_TOOL: Anthropic.Tool = {
   },
 };
 
-const BUDGET_SYSTEM_PROMPT = `You help homeowners plan DIY projects against a stated budget. Given a project
+const BUDGET_PROMPT = `You help homeowners plan DIY projects against a stated budget. Given a project
 description and a budget, first decide whether the budget is realistic for that project.
 
 If it is realistic: propose the best plan achievable at that budget (cost range, materials with itemized
@@ -181,8 +185,12 @@ with itemized budgets, a step-by-step work plan, and 1-3 YouTube search queries)
 
 IMPORTANT: Assume all labor that is safe for a DIYer to do is done for free by the user. Only include material
 costs and costs for labor that requires a licensed professional or specialized equipment. The materialsWithBudget
-items should explain and roughly align with the total cost_range. The plan should be an ordered list of steps
-(e.g. "1. Demo", "2. Framing", "3. Electrical") outlining the logical order for a DIYer to complete the work.
+items should explain and roughly align with the total cost — withinBudget.cost_range when the budget is realistic,
+or minRealisticBudget when it isn't. The plan should be an ordered list of steps
+(e.g. "1. Demo", "2. Framing", "3. Licensed electrician runs new circuit", "4. Patch and paint") outlining the
+logical order for a DIYer to complete the work. Any step requiring a licensed professional or permit inspection
+must be labeled as performed by that professional, not framed as a DIY task — keep the DIYer's own steps limited
+to safe preparation, assistance, or follow-up around that work.
 
 Standing safety rule: for safety-relevant project categories (electrical, structural, gas lines, and similar),
 flag typical permit and licensed-professional requirements — even when the budget is realistic, not only when
@@ -298,7 +306,7 @@ const BUDGET_ESTIMATE_TOOL: Anthropic.Tool = {
               required: ["item", "estimatedCost"],
               additionalProperties: false,
             },
-            description: "Materials and costs itemized, roughly explaining the total cost_range. Includes only materials and unsafe labor.",
+            description: "Materials and costs itemized, roughly explaining minRealisticBudget. Includes only materials and unsafe labor.",
           },
           plan: {
             type: "array",
@@ -354,7 +362,7 @@ export async function generateBudgetEstimate(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: 8192,
-    system: BUDGET_SYSTEM_PROMPT,
+    system: BUDGET_PROMPT,
     tools: [BUDGET_ESTIMATE_TOOL],
     tool_choice: { type: "tool", name: "generate_budget_estimate" },
     messages: [{ role: "user", content: `${description}\n\nBudget: $${budget}` }],
@@ -406,7 +414,7 @@ export async function generateEstimateWithTiers(
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: 8192,
-    system: SYSTEM_PROMPT,
+    system: TIER_ESTIMATE_PROMPT,
     tools: [ESTIMATE_TOOL],
     tool_choice: { type: "tool", name: "generate_estimate" },
     messages: [{ role: "user", content: description }],

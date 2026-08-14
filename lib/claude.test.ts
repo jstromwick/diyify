@@ -155,7 +155,11 @@ describe("generateBudgetEstimate", () => {
           { item: "Permit fee", estimatedCost: "$50-100" },
           { item: "Electrician inspection (if required)", estimatedCost: "$80-150" },
         ],
-        plan: ["1. Turn off power", "2. Remove old outlet", "3. Install new GFCI outlet", "4. Test and verify", "5. Schedule permit inspection"],
+        plan: [
+          "1. Turn off power and remove old outlet",
+          "2. Licensed electrician installs new GFCI outlet",
+          "3. Schedule permit inspection",
+        ],
         video_search_queries: ["install GFCI outlet bathroom code"],
         safety_notes: "GFCI-rated components and a permit are typically required for this work. Check your local building codes.",
       },
@@ -174,6 +178,10 @@ describe("generateBudgetEstimate", () => {
       minRealisticBudget: raw.minRealisticBudget,
       whatThatGetsYou: raw.whatThatGetsYou,
     });
+    if (result.realistic) throw new Error("expected an unrealistic result");
+    expect(
+      result.whatThatGetsYou.plan.some((step: string) => /licensed electrician/i.test(step)),
+    ).toBe(true);
   });
 
   it("throws when Claude does not return a tool_use block", async () => {
