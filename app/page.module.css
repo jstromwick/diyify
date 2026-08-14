@@ -96,6 +96,10 @@
   padding: var(--space-4);
 }
 
+.budgetPrimary {
+  margin-bottom: var(--space-4);
+}
+
 .costRange {
   font-size: 15px;
   font-weight: 600;
