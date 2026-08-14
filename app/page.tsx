@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type SyntheticEvent } from "react";
-import type { ModeAEstimate } from "@/lib/claude";
+import type { EstimateWithTiers } from "@/lib/claude";
 import styles from "./page.module.css";
 import { ArrowIcon, ClockIcon, IdleIllustration, LoadingIllustration, RefreshIcon, SearchIcon } from "./icons";
 
@@ -9,7 +9,7 @@ type FetchState =
   | { status: "idle" }
   | { status: "loading"; description: string }
   | { status: "error"; message: string }
-  | { status: "success"; estimate: ModeAEstimate };
+  | { status: "success"; estimate: EstimateWithTiers };
 
 
 function trim(text: string, max: number) {
@@ -48,7 +48,7 @@ export default function Home() {
         return;
       }
 
-      setState({ status: "success", estimate: body as ModeAEstimate });
+      setState({ status: "success", estimate: body as EstimateWithTiers });
     } catch {
       setState({ status: "error", message: "Couldn't reach the server. Try again." });
     }

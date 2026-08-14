@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import { generateModeAEstimate } from "@/lib/claude";
+import { generateBudgetEstimate, generateEstimateWithTiers } from "@/lib/claude";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -22,8 +22,27 @@ export async function POST(request: Request) {
     );
   }
 
+  const rawBudget =
+    typeof body === "object" && body !== null && "budget" in body
+      ? (body as { budget: unknown }).budget
+      : undefined;
+
+  let budget: number | undefined;
+  if (rawBudget !== undefined && rawBudget !== null) {
+    if (typeof rawBudget !== "number" || !Number.isFinite(rawBudget) || rawBudget <= 0) {
+      return NextResponse.json(
+        { error: "\"budget\" must be a positive number when provided" },
+        { status: 400 },
+      );
+    }
+    budget = rawBudget;
+  }
+
   try {
-    const estimate = await generateModeAEstimate(description.trim());
+    const estimate =
+      budget === undefined
+        ? await generateEstimateWithTiers(description.trim())
+        : await generateBudgetEstimate(description.trim(), budget);
     return NextResponse.json(estimate);
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
